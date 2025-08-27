@@ -1,7 +1,6 @@
-# mongodb-database-community Helm Chart
+# OpenCTI Helm Chart
 
-> [!NOTE]
-> This project is not affiliated with [MongoDB](https://github.com/mongodb/helm-charts).
+A Helm chart to deploy CR MongoDB Community database
 
 ## Usage
 
@@ -39,6 +38,6 @@ Charts are also available in OCI format. The list of available charts can be fou
 helm install [RELEASE_NAME] oci://ghcr.io/devops-ia/helm-mongodb-community-database/mongodb-community-database --version=[version]
 ```
 
-## mongodb-database-community chart
+## OpenCTI chart
 
-Can be found in [mongodb-community-database chart](charts/mongodb-community-database).
+Can be found in [mongodb-community-database chart](https://github.com/devops-ia/helm-mongodb-community-database/tree/main/charts/mongodb-community-database).
