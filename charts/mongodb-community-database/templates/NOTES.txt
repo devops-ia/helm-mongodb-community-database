@@ -1,0 +1,58 @@
+{{- if lookup "apiextensions.k8s.io/v1" "CustomResourceDefinition" "" "mongodbcommunity.mongodbcommunity.mongodb.com" }}
+MongoDB Community Operator deployment successful!
+
+1. Get the MongoDB connection details:
+
+   Database Name: MongoDB Community
+   Namespace:     {{ .Release.Namespace }}
+
+1. Connection Information:
+
+   {{- range .Values.mongodb.users }}
+   User: {{ .name }}
+   Database: {{ .db }}
+   Connection String Secret: {{ printf "%s-%s-connection-string" (include "mongodb-community-database.fullname" $) .name }}
+   SCRAM Credentials Secret: {{ printf "%s-%s-scram-credentials" (include "mongodb-community-database.fullname" $) .name }}
+   {{- end }}
+
+3. To get the connection strings:
+
+   {{- range .Values.mongodb.users }}
+   # For user {{ .name }}:
+   kubectl get secret {{ printf "%s-%s-connection-string" (include "mongodb-community-database.fullname" $) .name }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.connectionString\.standardSrv}' | base64 -d
+   {{- end }}
+
+4. To connect directly using port-forward:
+
+   kubectl port-forward svc/{{ include "mongodb-community-database.fullname" . }} 27017:27017 -n {{ .Release.Namespace }}
+
+   Then connect to: mongodb://localhost:27017
+
+5. Check the status of your MongoDB deployment:
+
+   kubectl get mongodbcommunity {{ include "mongodb-community-database.fullname" . }} -n {{ .Release.Namespace }}
+   kubectl describe mongodbcommunity {{ include "mongodb-community-database.fullname" . }} -n {{ .Release.Namespace }}
+
+{{- if .Values.mongodb.prometheus.enabled }}
+6. Prometheus metrics are enabled:
+
+   Metrics endpoint: http://{{ include "mongodb-community-database.fullname" . }}:{{ .Values.mongodb.prometheus.port | default 9216 }}{{ .Values.mongodb.prometheus.metricsPath | default "/metrics" }}
+
+   To access metrics via port-forward:
+   kubectl port-forward svc/{{ include "mongodb-community-database.fullname" . }} {{ .Values.mongodb.prometheus.port | default 9216 }}:{{ .Values.mongodb.prometheus.port | default 9216 }} -n {{ .Release.Namespace }}
+{{- end }}
+
+{{- if and .Values.mongodb.prometheus.enabled .Values.serviceMonitor.enabled }}
+7. ServiceMonitor created for Prometheus Operator monitoring
+{{- end }}
+
+{{- if .Values.mongodb.security.tls.enabled }}
+8. TLS is enabled for MongoDB connections
+{{- end }}
+
+Note: It may take a few minutes for MongoDB to be fully ready.
+{{- else }}
+WARNING: MongoDB Community Operator CRD not found in cluster.
+Please install the MongoDB Community Operator first:
+https://github.com/mongodb/mongodb-kubernetes-operator
+{{- end }}

@@ -1,0 +1,246 @@
+{{- if lookup "apiextensions.k8s.io/v1" "CustomResourceDefinition" "" "mongodbcommunity.mongodbcommunity.mongodb.com" }}
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: {{ include "mongodb-community-database.fullname" . }}
+  labels:
+    {{- include "mongodb-community-database.labels" . | nindent 4 }}
+  {{- with .Values.mongodb.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  members: {{ .Values.mongodb.members }}
+  type: {{ .Values.mongodb.type }}
+  version: {{ .Values.mongodb.version | default .Chart.AppVersion }}
+
+  {{- with .Values.mongodb.featureCompatibilityVersion }}
+  featureCompatibilityVersion: {{ . | quote }}
+  {{- end }}
+
+  {{- with .Values.mongodb.arbiters }}
+  arbiters: {{ . }}
+  {{- end }}
+
+  {{- if .Values.mongodb.additionalMongodConfig }}
+  additionalMongodConfig:
+    {{- toYaml .Values.mongodb.additionalMongodConfig | nindent 4 }}
+  {{- end }}
+
+  {{- if .Values.mongodb.additionalConnectionStringConfig }}
+  additionalConnectionStringConfig:
+    {{- toYaml .Values.mongodb.additionalConnectionStringConfig | nindent 4 }}
+  {{- end }}
+
+  {{- if .Values.mongodb.agent }}
+  agent:
+    {{- if .Values.mongodb.agent.logLevel }}
+    logLevel: {{ .Values.mongodb.agent.logLevel }}
+    {{- end }}
+    {{- if .Values.mongodb.agent.logFile }}
+    logFile: {{ .Values.mongodb.agent.logFile }}
+    {{- end }}
+    {{- if .Values.mongodb.agent.maxLogFileDurationHours }}
+    maxLogFileDurationHours: {{ .Values.mongodb.agent.maxLogFileDurationHours }}
+    {{- end }}
+    {{- if .Values.mongodb.agent.systemLog }}
+    systemLog:
+      {{- toYaml .Values.mongodb.agent.systemLog | nindent 6 }}
+    {{- end }}
+    {{- if .Values.mongodb.agent.logRotate }}
+    logRotate:
+      {{- toYaml .Values.mongodb.agent.logRotate | nindent 6 }}
+    {{- end }}
+    {{- if .Values.mongodb.agent.auditLogRotate }}
+    auditLogRotate:
+      {{- toYaml .Values.mongodb.agent.auditLogRotate | nindent 6 }}
+    {{- end }}
+  {{- end }}
+
+  {{- if .Values.mongodb.prometheus.enabled }}
+  prometheus:
+    username: {{ .Values.mongodb.prometheus.username }}
+    passwordSecretRef:
+      name: {{ include "mongodb-community-database.fullname" . }}-metrics-endpoint
+      key: password
+    {{- if .Values.mongodb.prometheus.port }}
+    port: {{ .Values.mongodb.prometheus.port }}
+    {{- end }}
+    {{- if .Values.mongodb.prometheus.metricsPath }}
+    metricsPath: {{ .Values.mongodb.prometheus.metricsPath }}
+    {{- end }}
+    {{- if .Values.mongodb.prometheus.tlsSecretKeyRef }}
+    tlsSecretKeyRef:
+      {{- toYaml .Values.mongodb.prometheus.tlsSecretKeyRef | nindent 6 }}
+    {{- end }}
+  {{- end }}
+
+  {{- if .Values.mongodb.memberConfig }}
+  memberConfig:
+    {{- toYaml .Values.mongodb.memberConfig | nindent 4 }}
+  {{- end }}
+
+  {{- if .Values.mongodb.replicaSetHorizons }}
+  replicaSetHorizons:
+    {{- toYaml .Values.mongodb.replicaSetHorizons | nindent 4 }}
+  {{- end }}
+
+  security:
+    authentication:
+      modes:
+        {{- .Values.mongodb.security.authentication.modes | toYaml | nindent 8 }}
+      {{- if .Values.mongodb.security.authentication.agentMode }}
+      agentMode: {{ .Values.mongodb.security.authentication.agentMode }}
+      {{- end }}
+      {{- if .Values.mongodb.security.authentication.ignoreUnknownUsers }}
+      ignoreUnknownUsers: {{ .Values.mongodb.security.authentication.ignoreUnknownUsers }}
+      {{- end }}
+      {{- if .Values.mongodb.security.authentication.agentCertificateSecretRef }}
+      agentCertificateSecretRef:
+        {{- toYaml .Values.mongodb.security.authentication.agentCertificateSecretRef | nindent 8 }}
+      {{- end }}
+
+    {{- if .Values.mongodb.security.tls }}
+    tls:
+      enabled: {{ .Values.mongodb.security.tls.enabled | default false }}
+      {{- if .Values.mongodb.security.tls.optional }}
+      optional: {{ .Values.mongodb.security.tls.optional }}
+      {{- end }}
+      {{- if .Values.mongodb.security.tls.certificateKeySecretRef }}
+      certificateKeySecretRef:
+        {{- toYaml .Values.mongodb.security.tls.certificateKeySecretRef | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mongodb.security.tls.caCertificateSecretRef }}
+      caCertificateSecretRef:
+        {{- toYaml .Values.mongodb.security.tls.caCertificateSecretRef | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mongodb.security.tls.caConfigMapRef }}
+      caConfigMapRef:
+        {{- toYaml .Values.mongodb.security.tls.caConfigMapRef | nindent 8 }}
+      {{- end }}
+    {{- end }}
+
+    {{- if .Values.mongodb.security.roles }}
+    roles:
+      {{- toYaml .Values.mongodb.security.roles | nindent 6 }}
+    {{- end }}
+
+  {{- if .Values.mongodb.users }}
+  users:
+    {{- range .Values.mongodb.users }}
+    - name: {{ .name | required "MongoDB user name is required" }}
+      db: {{ .db | default "admin" }}
+      passwordSecretRef:
+        name: {{ include "mongodb-community-database.fullname" $ }}-credentials
+        key: {{ .name }}-password
+      roles:
+        {{- range .roles }}
+        - name: {{ .name | required "MongoDB user role name is required" }}
+          db: {{ .db | required "MongoDB user role database is required" }}
+        {{- end }}
+      scramCredentialsSecretName: {{ printf "%s-%s" (include "mongodb-community-database.fullname" $) .name }}
+      connectionStringSecretName: {{ printf "%s-%s" (include "mongodb-community-database.fullname" $) .name }}
+      {{- if .connectionStringSecretNamespace }}
+      connectionStringSecretNamespace: {{ .connectionStringSecretNamespace }}
+      {{- end }}
+      {{- if .additionalConnectionStringConfig }}
+      additionalConnectionStringConfig:
+        {{- toYaml .additionalConnectionStringConfig | nindent 8 }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+
+  {{- if .Values.mongodb.automationConfig }}
+  automationConfig:
+    {{- if .Values.mongodb.automationConfig.processes }}
+    processes:
+      {{- toYaml .Values.mongodb.automationConfig.processes | nindent 6 }}
+    {{- end }}
+    {{- if .Values.mongodb.automationConfig.replicaSet }}
+    replicaSet:
+      {{- toYaml .Values.mongodb.automationConfig.replicaSet | nindent 6 }}
+    {{- end }}
+  {{- end }}
+
+  {{- if .Values.mongodb.statefulSet }}
+  statefulSet:
+    {{- if .Values.mongodb.statefulSet.metadata }}
+    metadata:
+      {{- if .Values.mongodb.statefulSet.metadata.labels }}
+      labels:
+        {{- toYaml .Values.mongodb.statefulSet.metadata.labels | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mongodb.statefulSet.metadata.annotations }}
+      annotations:
+        {{- toYaml .Values.mongodb.statefulSet.metadata.annotations | nindent 8 }}
+      {{- end }}
+    {{- end }}
+    spec:
+      {{- if .Values.mongodb.statefulSet.spec.template }}
+      template:
+        {{- if .Values.mongodb.statefulSet.spec.template.metadata }}
+        metadata:
+          {{- toYaml .Values.mongodb.statefulSet.spec.template.metadata | nindent 10 }}
+        {{- end }}
+        {{- if .Values.mongodb.statefulSet.spec.template.spec }}
+        spec:
+          {{- if .Values.mongodb.statefulSet.spec.template.spec.imagePullSecrets }}
+          imagePullSecrets:
+            {{- range .Values.mongodb.statefulSet.spec.template.spec.imagePullSecrets }}
+            - name: {{ .name }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.mongodb.statefulSet.spec.template.spec.nodeSelector }}
+          nodeSelector:
+            {{- toYaml .Values.mongodb.statefulSet.spec.template.spec.nodeSelector | nindent 12 }}
+          {{- end }}
+          {{- if .Values.mongodb.statefulSet.spec.template.spec.tolerations }}
+          tolerations:
+            {{- toYaml .Values.mongodb.statefulSet.spec.template.spec.tolerations | nindent 12 }}
+          {{- end }}
+          {{- if .Values.mongodb.statefulSet.spec.template.spec.affinity }}
+          affinity:
+            {{- toYaml .Values.mongodb.statefulSet.spec.template.spec.affinity | nindent 12 }}
+          {{- end }}
+          {{- if .Values.mongodb.statefulSet.spec.template.spec.containers }}
+          containers:
+            {{- toYaml .Values.mongodb.statefulSet.spec.template.spec.containers | nindent 12 }}
+          {{- end }}
+          {{- if .Values.mongodb.statefulSet.spec.template.spec.volumes }}
+          volumes:
+            {{- toYaml .Values.mongodb.statefulSet.spec.template.spec.volumes | nindent 12 }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.mongodb.statefulSet.spec.volumeClaimTemplates }}
+      volumeClaimTemplates:
+        {{- range .Values.mongodb.statefulSet.spec.volumeClaimTemplates }}
+        - metadata:
+            name: {{ .metadata.name | required "Volume claim template metadata name is required" }}
+            {{- if .metadata.labels }}
+            labels:
+              {{- toYaml .metadata.labels | nindent 14 }}
+            {{- end }}
+            {{- if .metadata.annotations }}
+            annotations:
+              {{- toYaml .metadata.annotations | nindent 14 }}
+            {{- end }}
+          spec:
+            accessModes:
+              {{- range .spec.accessModes }}
+              - {{ . | quote }}
+              {{- end }}
+            resources:
+              requests:
+                storage: {{ .spec.resources.requests.storage | required "Storage size is required" }}
+            {{- if .spec.storageClassName }}
+            storageClassName: {{ .spec.storageClassName }}
+            {{- end }}
+            {{- if .spec.selector }}
+            selector:
+              {{- toYaml .spec.selector | nindent 14 }}
+            {{- end }}
+        {{- end }}
+      {{- end }}
+  {{- end }}
+{{- end }}
