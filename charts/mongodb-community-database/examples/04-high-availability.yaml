@@ -1,0 +1,105 @@
+# High availability MongoDB Community deployment
+# 5 members with pod anti-affinity and resource requests/limits
+
+mongodb:
+  members: 5
+  type: ReplicaSet
+  version: "8.0.6-ubi9"
+  featureCompatibilityVersion: "8.0"
+
+  # Advanced mongod configuration
+  additionalMongodConfig:
+    operationProfiling:
+      mode: slowOp
+      slowOpThresholdMs: 100
+    replication:
+      oplogSizeMB: 10240
+
+  security:
+    authentication:
+      modes:
+        - SCRAM
+      ignoreUnknownUsers: true
+
+  users:
+    - name: "admin"
+      db: "admin"
+      password: "changeme-admin-password"
+      roles:
+        - name: "root"
+          db: "admin"
+
+    - name: "app-user"
+      db: "admin"
+      password: "changeme-app-password"
+      roles:
+        - name: "readWrite"
+          db: "production"
+        - name: "dbAdmin"
+          db: "production"
+
+  statefulSet:
+    metadata:
+      labels:
+        environment: production
+      annotations:
+        backup-policy: "daily"
+
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/component: database
+            app.kubernetes.io/part-of: mongodb-cluster
+
+        spec:
+          # Spread pods across nodes for high availability
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchExpressions:
+                      - key: app
+                        operator: In
+                        values:
+                          - mongodb-community
+                  topologyKey: kubernetes.io/hostname
+
+          # Node selector for dedicated database nodes
+          nodeSelector:
+            workload-type: database
+
+          # Tolerate dedicated database node taints
+          tolerations:
+            - key: "workload-type"
+              operator: "Equal"
+              value: "database"
+              effect: "NoSchedule"
+
+      volumeClaimTemplates:
+        - metadata:
+            name: "data-volume"
+            labels:
+              backup: "true"
+          spec:
+            accessModes:
+              - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: "100Gi"
+            storageClassName: "fast-ssd"
+        - metadata:
+            name: "logs-volume"
+          spec:
+            accessModes:
+              - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: "20Gi"
+            storageClassName: "standard"
+
+serviceAccount:
+  create: true
+
+serviceMonitor:
+  enabled: false

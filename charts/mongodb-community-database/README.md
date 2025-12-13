@@ -88,6 +88,7 @@ helm show values mongodb-community-database/mongodb-community-database
 | mongodb.arbiters | int | `0` | Number of arbiters in the replica set |
 | mongodb.automationConfig.processes | list | `[]` | Process overrides for automation config |
 | mongodb.automationConfig.replicaSet | object | `{}` | Replica set configuration overrides |
+| mongodb.clusterDomain | string | `""` | Cluster domain for service DNS (e.g., "cluster.local") |
 | mongodb.featureCompatibilityVersion | string | `""` | Feature compatibility version |
 | mongodb.memberConfig | list | `[]` | Replica set member configuration |
 | mongodb.members | int | `3` | Number of MongoDB replica set members |
@@ -108,6 +109,7 @@ helm show values mongodb-community-database/mongodb-community-database
 | mongodb.security.tls.certificateKeySecretRef | object | `{}` | Certificate and key secret reference |
 | mongodb.security.tls.enabled | bool | `false` | Enable TLS for MongoDB |
 | mongodb.security.tls.optional | bool | `false` | Make TLS optional |
+| mongodb.statefulSet.metadata.annotations | object | `{}` | Additional annotations for StatefulSet |
 | mongodb.statefulSet.metadata.labels | object | `{}` | Additional labels for StatefulSet |
 | mongodb.statefulSet.spec.template.metadata.labels | object | `{}` | Additional labels for pod template |
 | mongodb.statefulSet.spec.template.spec.affinity | object | `{}` | Affinity rules for pod scheduling |

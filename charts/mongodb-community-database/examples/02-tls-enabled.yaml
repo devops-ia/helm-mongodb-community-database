@@ -1,0 +1,60 @@
+# MongoDB Community deployment with TLS enabled
+# Requires pre-created secrets with certificates
+
+mongodb:
+  members: 3
+  type: ReplicaSet
+  version: "8.0.6-ubi9"
+
+  security:
+    authentication:
+      modes:
+        - SCRAM
+      ignoreUnknownUsers: true
+
+    tls:
+      enabled: true
+      optional: false
+      certificateKeySecretRef:
+        name: mongodb-tls-cert
+        key: tls.pem
+      caCertificateSecretRef:
+        name: mongodb-ca-cert
+        key: ca.pem
+
+  users:
+    - name: "admin"
+      db: "admin"
+      password: "changeme-admin-password"
+      roles:
+        - name: "root"
+          db: "admin"
+
+  statefulSet:
+    spec:
+      volumeClaimTemplates:
+        - metadata:
+            name: "data-volume"
+          spec:
+            accessModes:
+              - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: "20Gi"
+            storageClassName: "fast-ssd"
+        - metadata:
+            name: "logs-volume"
+          spec:
+            accessModes:
+              - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: "10Gi"
+            storageClassName: "standard"
+
+serviceAccount:
+  create: true
+
+# Note: Before deploying, create the required secrets:
+# kubectl create secret generic mongodb-tls-cert --from-file=tls.pem=./mongodb-cert.pem
+# kubectl create secret generic mongodb-ca-cert --from-file=ca.pem=./ca-cert.pem

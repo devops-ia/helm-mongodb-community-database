@@ -1,0 +1,62 @@
+# MongoDB Community deployment with Prometheus monitoring enabled
+# Includes ServiceMonitor for automatic scraping
+
+mongodb:
+  members: 3
+  type: ReplicaSet
+  version: "8.0.6-ubi9"
+
+  security:
+    authentication:
+      modes:
+        - SCRAM
+      ignoreUnknownUsers: true
+
+  # Enable Prometheus metrics exporter
+  prometheus:
+    enabled: true
+    username: "metrics-user"
+    password: "changeme-metrics-password"
+    port: 9216
+    metricsPath: "/metrics"
+
+  users:
+    - name: "admin"
+      db: "admin"
+      password: "changeme-admin-password"
+      roles:
+        - name: "root"
+          db: "admin"
+
+  statefulSet:
+    spec:
+      volumeClaimTemplates:
+        - metadata:
+            name: "data-volume"
+          spec:
+            accessModes:
+              - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: "10Gi"
+            storageClassName: "standard"
+        - metadata:
+            name: "logs-volume"
+          spec:
+            accessModes:
+              - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: "5Gi"
+            storageClassName: "standard"
+
+serviceAccount:
+  create: true
+
+# Enable ServiceMonitor for Prometheus Operator
+serviceMonitor:
+  enabled: true
+  interval: "30s"
+  scrapeTimeout: "10s"
+  metricRelabelings: []
+  relabelings: []

@@ -18,6 +18,10 @@ spec:
   featureCompatibilityVersion: {{ . | quote }}
   {{- end }}
 
+  {{- with .Values.mongodb.clusterDomain }}
+  clusterDomain: {{ . | quote }}
+  {{- end }}
+
   {{- with .Values.mongodb.arbiters }}
   arbiters: {{ . }}
   {{- end }}

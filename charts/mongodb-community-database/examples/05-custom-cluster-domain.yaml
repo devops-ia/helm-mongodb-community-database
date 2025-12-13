@@ -1,0 +1,58 @@
+# MongoDB Community deployment with custom cluster domain
+# Useful for multi-cluster or custom DNS setups
+
+mongodb:
+  members: 3
+  type: ReplicaSet
+  version: "8.0.6-ubi9"
+
+  # Custom cluster domain for DNS resolution
+  clusterDomain: "custom.local"
+
+  security:
+    authentication:
+      modes:
+        - SCRAM
+      ignoreUnknownUsers: true
+
+  users:
+    - name: "admin"
+      db: "admin"
+      password: "changeme-admin-password"
+      roles:
+        - name: "root"
+          db: "admin"
+
+  # Configure replica set horizons for external access
+  replicaSetHorizons:
+    - external-0.mongodb.example.com:27017
+    - external-1.mongodb.example.com:27017
+    - external-2.mongodb.example.com:27017
+
+  statefulSet:
+    spec:
+      volumeClaimTemplates:
+        - metadata:
+            name: "data-volume"
+          spec:
+            accessModes:
+              - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: "10Gi"
+            storageClassName: "standard"
+        - metadata:
+            name: "logs-volume"
+          spec:
+            accessModes:
+              - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: "5Gi"
+            storageClassName: "standard"
+
+serviceAccount:
+  create: true
+
+serviceMonitor:
+  enabled: false

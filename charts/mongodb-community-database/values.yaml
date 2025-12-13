@@ -24,6 +24,9 @@ mongodb:
   # -- Feature compatibility version
   featureCompatibilityVersion: ""
 
+  # -- Cluster domain for service DNS (e.g., "cluster.local")
+  clusterDomain: ""
+
   # -- Number of arbiters in the replica set
   arbiters: 0
 
@@ -151,6 +154,8 @@ mongodb:
     metadata:
       # -- Additional labels for StatefulSet
       labels: {}
+      # -- Additional annotations for StatefulSet
+      annotations: {}
     spec:
       template:
         metadata:

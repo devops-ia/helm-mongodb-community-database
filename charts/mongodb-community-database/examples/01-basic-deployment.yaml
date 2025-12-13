@@ -1,0 +1,58 @@
+# Basic MongoDB Community deployment
+# Single replica set with 3 members and SCRAM authentication
+
+mongodb:
+  members: 3
+  type: ReplicaSet
+  version: "8.0.6-ubi9"
+
+  security:
+    authentication:
+      modes:
+        - SCRAM
+      ignoreUnknownUsers: true
+
+  users:
+    - name: "admin"
+      db: "admin"
+      password: "changeme-admin-password"
+      roles:
+        - name: "root"
+          db: "admin"
+
+    - name: "app-user"
+      db: "admin"
+      password: "changeme-app-password"
+      roles:
+        - name: "readWrite"
+          db: "myapp"
+        - name: "dbAdmin"
+          db: "myapp"
+
+  statefulSet:
+    spec:
+      volumeClaimTemplates:
+        - metadata:
+            name: "data-volume"
+          spec:
+            accessModes:
+              - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: "10Gi"
+            storageClassName: "standard"
+        - metadata:
+            name: "logs-volume"
+          spec:
+            accessModes:
+              - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: "5Gi"
+            storageClassName: "standard"
+
+serviceAccount:
+  create: true
+
+serviceMonitor:
+  enabled: false
